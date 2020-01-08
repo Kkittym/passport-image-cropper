@@ -11,11 +11,12 @@ class Window(Tk):
         self.canvas = None
         self.fileMenu = None
         self.img = None #TK rendered image on canvas
-        self.dimensions = (351, 450)
+        self.dimensions = (350, 450)
         self.init_window()
 
     def init_window(self):
         self.title("Image Editor")
+        self.geometry('854x480')
         self.createMenu()
         self.createCanvas()
 
@@ -76,49 +77,61 @@ class Window(Tk):
             print("Close: No image open")
 
     def client_resize(self, scaleFactor):
-        width, height = self.openImage.size
-        self.openImage = self.openImage.resize((int(width*scaleFactor),int(height*scaleFactor)), Image.ANTIALIAS)
-        self.reload()
+        if (self.openImage):
+            width, height = self.openImage.size
+            self.openImage = self.openImage.resize((int(width*scaleFactor),int(height*scaleFactor)), Image.ANTIALIAS)
+            self.reload()
+        else:
+            print("Resize: No image to resize")
 
     def reload(self):
         self.canvas.delete(self.img)
         self.canvas.image = ImageTk.PhotoImage(self.openImage)
         self.img = self.canvas.create_image(0,0, image=self.canvas.image, anchor=NW)
+        self.canvas.tag_lower(self.img)
         
     def client_save(self):
         if (self.openImage):
-            filePath = filedialog.asksaveasfilename(initialfile=self.outfile, title = "Select file", filetypes = (("jpeg files","*.jpg"),("all files","*.*")))
-            if (f is None):
+            try:
+                filePath = filedialog.asksaveasfilename(initialfile=self.outfile, title = "Select file", filetypes = (("jpeg files","*.jpg"),("all files","*.*")))
+                self.openImage.save(filePath)
+            except:
+                print("An exception occurred, try saving the file again")
                 return
-            self.openImage.save(filePath)
         else:
             print("Save: No image open")
 
     def client_reset(self):
-        self.openImage.close()
-        self.openImage = Image.open(self.infile)
-        self.reload()
+        if (self.openImage):
+            self.openImage.close()
+            self.openImage = Image.open(self.infile)
+            self.reload()
 
     def rollOver(self, event):
-        x, y = event.x, event.y
-        (dimx, dimy) = self.dimensions
-        self.canvas.coords(self.rect, x-(dimx/2), y-(dimy/2), x+(dimx/2), y+(dimy/2))
+        if (self.openImage):
+            x, y = event.x, event.y
+            (dimx, dimy) = self.dimensions
+            self.canvas.coords(self.rect, x-(dimx/2), y-(dimy/2), x+(dimx/2), y+(dimy/2))
 
     def zoom(self, event):
-        x, y, delta = event.x, event.y, event.delta
-        value = 10 if (delta > 0) else -10
-        value = 0 if (delta == 0) else value
-        (dimx, dimy) = self.dimensions
-        self.dimensions = (dimx+value, dimy+value)
-        (dimx, dimy) = self.dimensions
-        self.canvas.coords(self.rect, x-(dimx/2), y-(dimy/2), x+(dimx/2), y+(dimy/2))
+        if (self.openImage):
+            x, y, delta = event.x, event.y, event.delta
+            value = 1 if (delta > 0) else -1
+            value = 0 if (delta == 0) else value
+            (dimx, dimy) = self.dimensions
+            self.dimensions = (dimx+(value*7), dimy+(value*9))
+            (dimx, dimy) = self.dimensions
+            self.canvas.coords(self.rect, x-(dimx/2), y-(dimy/2), x+(dimx/2), y+(dimy/2))
 
     def cut(self, event):
-        x, y = event.x, event.y
-        (dimx, dimy) = self.dimensions
-        box = (x-dimx, y-dimy, x+dimx, y+dimy)
-        self.openImage = self.openImage.crop(box)
-        self.reload()
+        if (self.openImage):
+            x, y = event.x, event.y
+            (dimx, dimy) = self.dimensions
+            box = (x-(dimx/2), y-(dimy/2), x+(dimx/2), y+(dimy/2))
+            self.openImage = self.openImage.crop(box)
+            self.reload()
+        else:
+            print("Cut: No image open")
 
 root = Window()
 
